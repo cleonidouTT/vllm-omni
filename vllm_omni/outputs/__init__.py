@@ -11,6 +11,7 @@ from vllm.outputs import CompletionOutput, RequestOutput
 from vllm.v1.outputs import ModelRunnerOutput
 
 from vllm_omni.inputs.data import OmniPromptType
+from vllm_omni.metrics.utils import iter_request_output_items
 
 
 @dataclass
@@ -203,7 +204,11 @@ class OmniRequestOutput(RequestOutput):
         # dataclass defaults (e.g. ``outputs=[]``, ``finished=True``).
         for name in _REQUEST_OUTPUT_CONTENT_ATTRS:
             if hasattr(source, name):
-                setattr(self, name, getattr(source, name))
+                value = getattr(source, name)
+                if name == "outputs":
+                    # PoolingRequestOutput carries one PoolingOutput; consumers expect a list.
+                    value = list(iter_request_output_items(source))
+                setattr(self, name, value)
 
         # Omni-specific fields — only present when the source is itself an
         # OmniRequestOutput (e.g. a diffusion stage inside a pipeline).

@@ -32,6 +32,7 @@ from vllm_omni.entrypoints.pd_utils import PDDisaggregationMixin
 from vllm_omni.entrypoints.utils import coerce_param_message_types, get_final_stage_id_for_e2e
 from vllm_omni.errors import raise_client_error_or
 from vllm_omni.metrics.modality import OmniModalityMetrics, observe_modality_at_finalize
+from vllm_omni.metrics.utils import iter_request_output_items
 from vllm_omni.metrics.prometheus import OmniPrometheusMetrics
 from vllm_omni.metrics.stats import OrchestratorAggregator
 from vllm_omni.metrics.transfer import OmniTransferMetrics
@@ -714,7 +715,7 @@ class OmniBase(PDDisaggregationMixin):
                 e2e_seconds = now - req_start_ts.get(req_id, wall_start_ts)
                 # Extract finished_reason from upstream CompletionOutput so
                 # the per-reason completion Counter is labelled correctly.
-                completion_outputs = getattr(engine_outputs, "outputs", None) or []
+                completion_outputs = iter_request_output_items(engine_outputs)
                 fr = (getattr(completion_outputs[0], "finish_reason", None) if completion_outputs else None) or "stop"
                 self.prom_metrics.request_succeeded(
                     e2e_seconds,
